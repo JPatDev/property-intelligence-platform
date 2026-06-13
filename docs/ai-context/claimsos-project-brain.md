@@ -17,6 +17,7 @@ The platform combines:
 * Workflow Enforcement
 * AI Claim Strategy
 * Public Adjusting Operations
+* Agent/Adjuster License Validation Checks
 
 ClaimsOS is not a CRM at the momen, but we might want to do include that in the future.
 
