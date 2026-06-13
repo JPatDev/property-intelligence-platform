@@ -19,9 +19,13 @@ The platform combines:
 * Public Adjusting Operations
 * Agent/Adjuster License Validation Checks
 
-ClaimsOS is not a CRM at the momen, but we might want to do include that in the future.
+ClaimsOS is not a CRM at the moment, but would want to plan for that in the future.
 
 ClaimsOS is an operating system for insurance claim professionals.
+
+The ClaimsOS platform should become the operational center of a public adjusting business.
+
+The slogan is "No File Left Behind" or "Your business in a box..."
 
 ---
 
