@@ -1,4 +1,4 @@
-# AI Claim Strategy Requirement
+# AI Claim Strategy Requirements
 
 - Policy analysis
 - Missing evidence detection
