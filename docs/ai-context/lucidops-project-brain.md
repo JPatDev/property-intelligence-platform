@@ -1,4 +1,4 @@
-# ClaimsOS Project Brain
+# LucidOPS Project Brain
 
 Version: 1.0
 
@@ -8,7 +8,7 @@ Status: Master AI Context Document
 
 # Project Overview
 
-ClaimsOS is a multi-tenant SaaS platform designed for public adjusters, appraisers, umpires, attorneys, contractors, and insurance dispute professionals.
+LucidOPS is a multi-tenant SaaS platform designed for public adjusters, appraisers, umpires, attorneys, contractors, and insurance dispute professionals.
 
 The platform combines:
 
@@ -19,11 +19,11 @@ The platform combines:
 * Public Adjusting Operations
 * Agent/Adjuster License Validation Checks
 
-ClaimsOS is not a CRM at the moment, but would want to plan for that in the future.
+LucidOPS is not a CRM at the moment, but would want to plan for that in the future.
 
-ClaimsOS is an operating system for insurance claim professionals.
+LucidOPS is an operating system for insurance claim professionals.
 
-The ClaimsOS platform should become the operational center of a public adjusting business.
+The LucidOPS platform should become the operational center of a public adjusting business.
 
 The slogan is "No File Left Behind" or "Your business in a box..."
 
@@ -86,7 +86,7 @@ Capabilities:
 The workflow engine controls claim progression.
 The workflows are called "pipe lines".
 
-ClaimsOS does not allow users to bypass required processes.
+LucidOPS does not allow users to bypass required processes.
 
 ---
 
@@ -148,7 +148,7 @@ AI assists users but does not make final decisions.
 
 # Product Philosophy
 
-ClaimsOS should function as:
+LucidOPS should function as:
 
 Property Intelligence
 +
@@ -188,7 +188,7 @@ Future:
 
 # SaaS Model
 
-ClaimsOS is a commercial SaaS platform.
+LucidOPS is a commercial SaaS platform.
 
 Deployment target:
 
@@ -283,7 +283,7 @@ Avoid premature microservices.
 
 # Bounded Contexts
 
-ClaimsOS consists of the following bounded contexts:
+LucidOPS consists of the following bounded contexts:
 
 * Identity
 * Organizations
@@ -462,7 +462,7 @@ Requirements:
 * Secret management via Key Vault
 * MFA support
 
-ClaimsOS must be designed as a commercial SaaS platform.
+LucidOPS must be designed as a commercial SaaS platform.
 
 ---
 
@@ -516,7 +516,7 @@ When generating code:
 
 # Long-Term Vision
 
-ClaimsOS becomes the operating system for insurance claim professionals.
+LucidOPS becomes the operating system for insurance claim professionals.
 
 The platform should combine:
 
