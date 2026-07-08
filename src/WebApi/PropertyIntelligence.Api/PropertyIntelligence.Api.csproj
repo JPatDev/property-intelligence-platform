@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\BuildingBlocks\PropertyIntelligence.BuildingBlocks\PropertyIntelligence.BuildingBlocks.csproj" />
+    <ProjectReference Include="..\..\Modules\Identity\PropertyIntelligence.Modules.Identity\PropertyIntelligence.Modules.Identity.csproj" />
+    <ProjectReference Include="..\..\Modules\Organizations\PropertyIntelligence.Modules.Organizations\PropertyIntelligence.Modules.Organizations.csproj" />
+    <ProjectReference Include="..\..\Modules\Properties\PropertyIntelligence.Modules.Properties\PropertyIntelligence.Modules.Properties.csproj" />
+    <ProjectReference Include="..\..\Modules\Claims\PropertyIntelligence.Modules.Claims\PropertyIntelligence.Modules.Claims.csproj" />
+    <ProjectReference Include="..\..\Modules\Documents\PropertyIntelligence.Modules.Documents\PropertyIntelligence.Modules.Documents.csproj" />
+    <ProjectReference Include="..\..\Modules\Workflow\PropertyIntelligence.Modules.Workflow\PropertyIntelligence.Modules.Workflow.csproj" />
+    <ProjectReference Include="..\..\Modules\Reporting\PropertyIntelligence.Modules.Reporting\PropertyIntelligence.Modules.Reporting.csproj" />
+    <ProjectReference Include="..\..\Modules\Billing\PropertyIntelligence.Modules.Billing\PropertyIntelligence.Modules.Billing.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

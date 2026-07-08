@@ -1,0 +1,34 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/PropertyIntelligence.BuildingBlocks/PropertyIntelligence.BuildingBlocks.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Billing/">
+    <Project Path="src/Modules/Billing/PropertyIntelligence.Modules.Billing/PropertyIntelligence.Modules.Billing.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Claims/">
+    <Project Path="src/Modules/Claims/PropertyIntelligence.Modules.Claims/PropertyIntelligence.Modules.Claims.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Documents/">
+    <Project Path="src/Modules/Documents/PropertyIntelligence.Modules.Documents/PropertyIntelligence.Modules.Documents.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Identity/">
+    <Project Path="src/Modules/Identity/PropertyIntelligence.Modules.Identity/PropertyIntelligence.Modules.Identity.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Organizations/">
+    <Project Path="src/Modules/Organizations/PropertyIntelligence.Modules.Organizations/PropertyIntelligence.Modules.Organizations.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Properties/">
+    <Project Path="src/Modules/Properties/PropertyIntelligence.Modules.Properties/PropertyIntelligence.Modules.Properties.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Reporting/">
+    <Project Path="src/Modules/Reporting/PropertyIntelligence.Modules.Reporting/PropertyIntelligence.Modules.Reporting.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Workflow/">
+    <Project Path="src/Modules/Workflow/PropertyIntelligence.Modules.Workflow/PropertyIntelligence.Modules.Workflow.csproj" />
+  </Folder>
+  <Folder Name="/src/WebApi/">
+    <Project Path="src/WebApi/PropertyIntelligence.Api/PropertyIntelligence.Api.csproj" />
+  </Folder>
+</Solution>
