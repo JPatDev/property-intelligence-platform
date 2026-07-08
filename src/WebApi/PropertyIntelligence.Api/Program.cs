@@ -22,9 +22,17 @@ IModule[] modules =
     new BillingModule(),
 ];
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 builder.Services.AddModules(builder.Configuration, modules);
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" })).WithTags("Platform");
 app.MapGet("/api/modules", (IReadOnlyCollection<IModule> registeredModules) =>
