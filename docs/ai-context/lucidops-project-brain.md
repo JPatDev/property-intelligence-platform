@@ -226,7 +226,7 @@ No cross-tenant data access is permitted.
 
 Backend:
 
-* .NET 9
+* .NET 10
 * ASP.NET Core
 * C#
 * MediatR
@@ -406,8 +406,8 @@ Schema-per-bounded-context design:
 
 Language:
 
-* C# 13
-* .NET 9
+* C# 14
+* .NET 10
 
 Patterns:
 
