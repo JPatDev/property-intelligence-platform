@@ -8,7 +8,8 @@ public sealed record CreateWorkflowCommand(
     Guid OrganizationId,
     Guid ClaimId,
     WorkflowType Type,
-    WorkflowSnapshot Snapshot) : IWorkflowCommand<Guid>;
+    string DefinitionKey,
+    int DefinitionVersion) : IWorkflowCommand<Guid>;
 
 public sealed record StartWorkflowCommand(
     Guid OrganizationId,

@@ -17,6 +17,7 @@ internal sealed class CompletionGateConfiguration : IEntityTypeConfiguration<Com
         builder.HasKey(gate => gate.Id);
 
         builder.Property(gate => gate.Id).ValueGeneratedNever();
+        builder.Property(gate => gate.SourceDefinitionId).IsRequired();
         builder.Property(gate => gate.OrganizationId).IsRequired();
         builder.Property(gate => gate.GateType).HasMaxLength(100).IsRequired();
         builder.Property(gate => gate.Scope).HasConversion<string>().HasMaxLength(32).IsRequired();
@@ -41,6 +42,7 @@ internal sealed class CompletionGateConfiguration : IEntityTypeConfiguration<Com
             .IsRequired();
 
         builder.HasIndex("WorkflowTaskId", nameof(CompletionGateDefinition.Id)).IsUnique();
+        builder.HasIndex("WorkflowTaskId", nameof(CompletionGateDefinition.SourceDefinitionId)).IsUnique();
         builder.HasIndex(gate => new { gate.OrganizationId, gate.GateType });
     }
 

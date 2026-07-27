@@ -18,6 +18,20 @@ public sealed class WorkflowEscalationNotFoundException(Guid escalationId)
         "workflow.escalation_not_found",
         $"Workflow escalation '{escalationId}' was not found.");
 
+public sealed class WorkflowDefinitionNotFoundException(string key, int version)
+    : WorkflowApplicationException(
+        "workflow.definition_not_found",
+        $"Workflow definition '{key}' version {version} was not found.");
+
+public sealed class WorkflowDefinitionTypeMismatchException(
+    string key,
+    int version,
+    Domain.WorkflowType requestedType,
+    Domain.WorkflowType definitionType)
+    : WorkflowApplicationException(
+        "workflow.definition_type_mismatch",
+        $"Workflow definition '{key}' version {version} is {definitionType}, not {requestedType}.");
+
 public sealed class WorkflowConcurrencyException(Exception? innerException = null)
     : WorkflowApplicationException(
         "workflow.concurrency_conflict",

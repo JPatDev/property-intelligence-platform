@@ -21,6 +21,7 @@ internal sealed class WorkflowOperationalControlBehavior<TRequest, TResponse>(
             await operationalControlService.RefreshAsync(
                 workflowCommand.OrganizationId,
                 workflowCommand.WorkflowId,
+                false,
                 cancellationToken);
         }
 

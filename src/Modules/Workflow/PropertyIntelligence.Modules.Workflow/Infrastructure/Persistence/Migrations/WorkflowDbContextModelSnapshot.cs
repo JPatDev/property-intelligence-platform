@@ -72,6 +72,10 @@ namespace PropertyIntelligence.Modules.Workflow.Infrastructure.Persistence.Migra
                         .HasColumnType("character varying(32)")
                         .HasColumnName("severity");
 
+                    b.Property<Guid>("SourceDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_definition_id");
+
                     b.Property<Guid>("WorkflowTaskId")
                         .HasColumnType("uuid")
                         .HasColumnName("workflow_task_id");
@@ -85,6 +89,10 @@ namespace PropertyIntelligence.Modules.Workflow.Infrastructure.Persistence.Migra
                     b.HasIndex("WorkflowTaskId", "Id")
                         .IsUnique()
                         .HasDatabaseName("ix_completion_gate_workflow_task_id_id");
+
+                    b.HasIndex("WorkflowTaskId", "SourceDefinitionId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_completion_gate_workflow_task_id_source_definition_id");
 
                     b.ToTable("completion_gate", "workflow");
                 });
@@ -151,6 +159,89 @@ namespace PropertyIntelligence.Modules.Workflow.Infrastructure.Persistence.Migra
                         .HasDatabaseName("ix_next_action_organization_id_owner_id_calculated_priority");
 
                     b.ToTable("next_action", "workflow");
+                });
+
+            modelBuilder.Entity("PropertyIntelligence.Modules.Workflow.Domain.WorkflowAuditRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("action");
+
+                    b.Property<Guid?>("ActorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_id");
+
+                    b.Property<string>("ActorType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("actor_type");
+
+                    b.Property<string>("CausationId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("causation_id");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("entity_type");
+
+                    b.Property<string>("NewState")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("new_state");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("PreviousState")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("previous_state");
+
+                    b.Property<bool>("SystemGenerated")
+                        .HasColumnType("boolean")
+                        .HasColumnName("system_generated");
+
+                    b.Property<Guid>("WorkflowId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("workflow_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_workflow_audit");
+
+                    b.HasIndex("WorkflowId")
+                        .HasDatabaseName("ix_workflow_audit_workflow_id");
+
+                    b.HasIndex("OrganizationId", "CorrelationId")
+                        .HasDatabaseName("ix_workflow_audit_organization_id_correlation_id");
+
+                    b.HasIndex("OrganizationId", "WorkflowId", "OccurredAt")
+                        .HasDatabaseName("ix_workflow_audit_organization_id_workflow_id_occurred_at");
+
+                    b.ToTable("workflow_audit", "workflow");
                 });
 
             modelBuilder.Entity("PropertyIntelligence.Modules.Workflow.Domain.WorkflowBlocker", b =>
@@ -391,6 +482,82 @@ namespace PropertyIntelligence.Modules.Workflow.Infrastructure.Persistence.Migra
                     b.ToTable("workflow_instance", "workflow");
                 });
 
+            modelBuilder.Entity("PropertyIntelligence.Modules.Workflow.Domain.WorkflowOutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AggregateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("aggregate_id");
+
+                    b.Property<string>("AggregateType")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("aggregate_type");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_count");
+
+                    b.Property<DateTimeOffset>("AvailableAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("available_at");
+
+                    b.Property<string>("CausationId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("causation_id");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("event_type");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload");
+
+                    b.Property<DateTimeOffset?>("ProcessedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_outbox_message");
+
+                    b.HasIndex("OrganizationId", "AggregateId", "OccurredAt")
+                        .HasDatabaseName("ix_outbox_message_organization_id_aggregate_id_occurred_at");
+
+                    b.HasIndex("ProcessedAt", "AvailableAt", "OccurredAt")
+                        .HasDatabaseName("ix_outbox_message_processed_at_available_at_occurred_at");
+
+                    b.ToTable("outbox_message", "workflow");
+                });
+
             modelBuilder.Entity("PropertyIntelligence.Modules.Workflow.Domain.WorkflowStage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -603,6 +770,16 @@ namespace PropertyIntelligence.Modules.Workflow.Infrastructure.Persistence.Migra
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_next_action_workflows_workflow_id");
+                });
+
+            modelBuilder.Entity("PropertyIntelligence.Modules.Workflow.Domain.WorkflowAuditRecord", b =>
+                {
+                    b.HasOne("PropertyIntelligence.Modules.Workflow.Domain.WorkflowInstance", null)
+                        .WithMany()
+                        .HasForeignKey("WorkflowId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_workflow_audit_workflows_workflow_id");
                 });
 
             modelBuilder.Entity("PropertyIntelligence.Modules.Workflow.Domain.WorkflowBlocker", b =>

@@ -29,6 +29,7 @@ public sealed class CompletionGateDefinition
     }
 
     public Guid Id { get; private set; }
+    public Guid SourceDefinitionId { get; private set; }
     public Guid OrganizationId { get; private set; }
     public string GateType { get; private set; } = string.Empty;
     public CompletionGateScope Scope { get; private set; }
@@ -68,8 +69,9 @@ public sealed class CompletionGateDefinition
 
     internal CompletionGateDefinition Freeze(Guid organizationId)
     {
+        var sourceDefinitionId = Id;
         var gate = new CompletionGateDefinition(
-            Id,
+            Guid.NewGuid(),
             GateType.Trim(),
             Scope,
             Severity,
@@ -79,6 +81,7 @@ public sealed class CompletionGateDefinition
             FailureMessage.Trim(),
             EvaluationVersion);
         gate.OrganizationId = organizationId;
+        gate.SourceDefinitionId = sourceDefinitionId;
         return gate;
     }
 }

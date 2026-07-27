@@ -1,6 +1,7 @@
 using PropertyIntelligence.BuildingBlocks.Modules;
 using PropertyIntelligence.Modules.Billing;
 using PropertyIntelligence.Modules.Claims;
+using PropertyIntelligence.Modules.Communications;
 using PropertyIntelligence.Modules.Documents;
 using PropertyIntelligence.Modules.Identity;
 using PropertyIntelligence.Modules.Organizations;
@@ -32,6 +33,7 @@ try
         new PropertiesModule(),
         new ClaimsModule(),
         new DocumentsModule(),
+        new CommunicationsModule(),
         new WorkflowModule(),
         new ReportingModule(),
         new BillingModule(),
@@ -75,6 +77,8 @@ try
     }
 
     app.UseCors("WebApp");
+    app.UseAuthentication();
+    app.UseAuthorization();
 
     app.MapGet("/health", () => Results.Ok(new { status = "healthy" })).WithTags("Platform");
     app.MapGet("/api/modules", (IReadOnlyCollection<IModule> registeredModules) =>

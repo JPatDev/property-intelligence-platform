@@ -10,6 +10,9 @@
   <Folder Name="/src/Modules/Claims/">
     <Project Path="src/Modules/Claims/PropertyIntelligence.Modules.Claims/PropertyIntelligence.Modules.Claims.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Communications/">
+    <Project Path="src/Modules/Communications/PropertyIntelligence.Modules.Communications/PropertyIntelligence.Modules.Communications.csproj" />
+  </Folder>
   <Folder Name="/src/Modules/Documents/">
     <Project Path="src/Modules/Documents/PropertyIntelligence.Modules.Documents/PropertyIntelligence.Modules.Documents.csproj" />
   </Folder>
@@ -30,5 +33,11 @@
   </Folder>
   <Folder Name="/src/WebApi/">
     <Project Path="src/WebApi/PropertyIntelligence.Api/PropertyIntelligence.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/Modules/" />
+  <Folder Name="/tests/Modules/Workflow/">
+    <Project Path="tests/Modules/Workflow/PropertyIntelligence.Modules.Workflow.UnitTests/PropertyIntelligence.Modules.Workflow.UnitTests.csproj" />
+    <Project Path="tests/Modules/Workflow/PropertyIntelligence.Modules.Workflow.IntegrationTests/PropertyIntelligence.Modules.Workflow.IntegrationTests.csproj" />
   </Folder>
 </Solution>

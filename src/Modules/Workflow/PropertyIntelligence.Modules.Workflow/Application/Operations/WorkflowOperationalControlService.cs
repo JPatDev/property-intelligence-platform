@@ -1,5 +1,8 @@
+using System.Diagnostics;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using PropertyIntelligence.Modules.Workflow.Application.Auditing;
 using PropertyIntelligence.Modules.Workflow.Application.Errors;
 using PropertyIntelligence.Modules.Workflow.Domain;
 using PropertyIntelligence.Modules.Workflow.Infrastructure.Persistence;
@@ -11,6 +14,7 @@ public interface IWorkflowOperationalControlService
     Task RefreshAsync(
         Guid organizationId,
         Guid workflowId,
+        bool systemGenerated,
         CancellationToken cancellationToken);
 }
 
@@ -18,11 +22,13 @@ internal sealed class WorkflowOperationalControlService(
     WorkflowDbContext dbContext,
     INextActionCalculator nextActionCalculator,
     IOptions<WorkflowOperationsOptions> options,
+    IWorkflowChangeRecorder changeRecorder,
     TimeProvider timeProvider) : IWorkflowOperationalControlService
 {
     public async Task RefreshAsync(
         Guid organizationId,
         Guid workflowId,
+        bool systemGenerated,
         CancellationToken cancellationToken)
     {
         var workflow = await dbContext.Workflows
@@ -38,6 +44,32 @@ internal sealed class WorkflowOperationalControlService(
 
         await RefreshNextActionAsync(workflow, nextAction, now, cancellationToken);
         await RefreshEscalationsAsync(workflow, nextAction, now, cancellationToken);
+
+        if (systemGenerated && dbContext.ChangeTracker.HasChanges())
+        {
+            var correlationId = Activity.Current?.TraceId.ToString() ?? Guid.NewGuid().ToString("N");
+            var state = JsonSerializer.Serialize(new
+            {
+                nextActionTaskId = nextAction?.TaskId,
+                nextActionReasonCode = nextAction?.ReasonCode,
+                openEscalationCount = dbContext.Escalations.Local.Count(escalation =>
+                    escalation.WorkflowId == workflow.Id &&
+                    escalation.Status != WorkflowEscalationStatus.Resolved),
+            });
+            changeRecorder.Record(
+                workflow.OrganizationId,
+                workflow.Id,
+                "OperationalControlRefresh",
+                null,
+                true,
+                null,
+                state,
+                [nameof(NextActionSnapshot), nameof(WorkflowEscalation)],
+                workflow.Version,
+                now,
+                correlationId,
+                "WorkflowOperationsWorker");
+        }
     }
 
     private async Task RefreshNextActionAsync(

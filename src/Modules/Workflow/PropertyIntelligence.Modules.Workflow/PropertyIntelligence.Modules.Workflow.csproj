@@ -3,6 +3,9 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\..\..\BuildingBlocks\PropertyIntelligence.BuildingBlocks\PropertyIntelligence.BuildingBlocks.csproj" />
+    <ProjectReference Include="..\..\Claims\PropertyIntelligence.Modules.Claims\PropertyIntelligence.Modules.Claims.csproj" />
+    <ProjectReference Include="..\..\Communications\PropertyIntelligence.Modules.Communications\PropertyIntelligence.Modules.Communications.csproj" />
+    <ProjectReference Include="..\..\Documents\PropertyIntelligence.Modules.Documents\PropertyIntelligence.Modules.Documents.csproj" />
   </ItemGroup>
 
   <ItemGroup>

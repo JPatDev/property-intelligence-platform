@@ -43,6 +43,7 @@ internal static class WorkflowMappings
                             task.DependencySourceDefinitionIds.ToArray(),
                             task.CompletionGates.Select(gate => new CompletionGateDetails(
                                 gate.Id,
+                                gate.SourceDefinitionId,
                                 gate.GateType,
                                 gate.Scope,
                                 gate.Severity,
@@ -101,6 +102,7 @@ public sealed record WorkflowTaskDetails(
 
 public sealed record CompletionGateDetails(
     Guid Id,
+    Guid SourceDefinitionId,
     string GateType,
     CompletionGateScope Scope,
     CompletionGateSeverity Severity,

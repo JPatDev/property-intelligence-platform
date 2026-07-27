@@ -65,6 +65,7 @@ internal sealed class WorkflowOperationsWorker(
                 await service.RefreshAsync(
                     workflow.OrganizationId,
                     workflow.Id,
+                    true,
                     cancellationToken);
             }
 

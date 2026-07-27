@@ -6,6 +6,7 @@
     <ProjectReference Include="..\..\Modules\Organizations\PropertyIntelligence.Modules.Organizations\PropertyIntelligence.Modules.Organizations.csproj" />
     <ProjectReference Include="..\..\Modules\Properties\PropertyIntelligence.Modules.Properties\PropertyIntelligence.Modules.Properties.csproj" />
     <ProjectReference Include="..\..\Modules\Claims\PropertyIntelligence.Modules.Claims\PropertyIntelligence.Modules.Claims.csproj" />
+    <ProjectReference Include="..\..\Modules\Communications\PropertyIntelligence.Modules.Communications\PropertyIntelligence.Modules.Communications.csproj" />
     <ProjectReference Include="..\..\Modules\Documents\PropertyIntelligence.Modules.Documents\PropertyIntelligence.Modules.Documents.csproj" />
     <ProjectReference Include="..\..\Modules\Workflow\PropertyIntelligence.Modules.Workflow\PropertyIntelligence.Modules.Workflow.csproj" />
     <ProjectReference Include="..\..\Modules\Reporting\PropertyIntelligence.Modules.Reporting\PropertyIntelligence.Modules.Reporting.csproj" />

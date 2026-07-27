@@ -36,6 +36,20 @@ internal sealed class WorkflowExceptionFilter : IEndpointFilter
                 "Workflow escalation not found",
                 exception);
         }
+        catch (WorkflowDefinitionNotFoundException exception)
+        {
+            return Problem(
+                StatusCodes.Status404NotFound,
+                "Workflow definition not found",
+                exception);
+        }
+        catch (WorkflowDefinitionTypeMismatchException exception)
+        {
+            return Problem(
+                StatusCodes.Status409Conflict,
+                "Workflow definition type mismatch",
+                exception);
+        }
         catch (WorkflowConcurrencyException exception)
         {
             return Problem(

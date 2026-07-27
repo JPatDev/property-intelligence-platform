@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using PropertyIntelligence.Modules.Workflow.Application.Errors;
+using PropertyIntelligence.Modules.Workflow.Application.Definitions;
 using PropertyIntelligence.Modules.Workflow.Application.Gates;
 using PropertyIntelligence.Modules.Workflow.Domain;
 using PropertyIntelligence.Modules.Workflow.Infrastructure.Persistence;
@@ -9,16 +10,31 @@ namespace PropertyIntelligence.Modules.Workflow.Application.Commands;
 
 internal sealed class CreateWorkflowCommandHandler(
     WorkflowDbContext dbContext,
+    IWorkflowDefinitionCatalog definitionCatalog,
     TimeProvider timeProvider)
     : IRequestHandler<CreateWorkflowCommand, Guid>
 {
     public Task<Guid> Handle(CreateWorkflowCommand request, CancellationToken cancellationToken)
     {
+        var definition = definitionCatalog.Find(request.DefinitionKey, request.DefinitionVersion)
+            ?? throw new WorkflowDefinitionNotFoundException(
+                request.DefinitionKey,
+                request.DefinitionVersion);
+
+        if (definition.Type != request.Type)
+        {
+            throw new WorkflowDefinitionTypeMismatchException(
+                request.DefinitionKey,
+                request.DefinitionVersion,
+                request.Type,
+                definition.Type);
+        }
+
         var workflow = WorkflowInstance.Create(
             request.OrganizationId,
             request.ClaimId,
             request.Type,
-            request.Snapshot,
+            definition.Snapshot,
             timeProvider.GetUtcNow());
 
         dbContext.Workflows.Add(workflow);

@@ -23,7 +23,8 @@ internal sealed class CreateWorkflowCommandValidator : AbstractValidator<CreateW
         RuleFor(command => command.OrganizationId).NotEmpty();
         RuleFor(command => command.ClaimId).NotEmpty();
         RuleFor(command => command.Type).IsInEnum();
-        RuleFor(command => command.Snapshot).NotNull();
+        RuleFor(command => command.DefinitionKey).NotEmpty().MaximumLength(100);
+        RuleFor(command => command.DefinitionVersion).GreaterThan(0);
     }
 }
 

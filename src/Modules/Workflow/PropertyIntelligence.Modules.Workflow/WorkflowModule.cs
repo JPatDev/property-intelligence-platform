@@ -9,10 +9,13 @@ using FluentValidation;
 using MediatR;
 using PropertyIntelligence.BuildingBlocks.Modules;
 using PropertyIntelligence.Modules.Workflow.Application.Behaviors;
+using PropertyIntelligence.Modules.Workflow.Application.Auditing;
+using PropertyIntelligence.Modules.Workflow.Application.Definitions;
 using PropertyIntelligence.Modules.Workflow.Application.Gates;
 using PropertyIntelligence.Modules.Workflow.Application.Operations;
 using PropertyIntelligence.Modules.Workflow.Api;
 using PropertyIntelligence.Modules.Workflow.Infrastructure.Persistence;
+using PropertyIntelligence.Modules.Workflow.Infrastructure.Definitions;
 using PropertyIntelligence.Modules.Workflow.Infrastructure.Gates;
 using PropertyIntelligence.Modules.Workflow.Infrastructure.Operations;
 
@@ -34,9 +37,11 @@ public sealed class WorkflowModule : IModule
                 .UseSnakeCaseNamingConvention());
 
         services.AddSingleton(TimeProvider.System);
+        services.AddSingleton<IWorkflowDefinitionCatalog, BuiltInWorkflowDefinitionCatalog>();
         services.Configure<WorkflowOperationsOptions>(
             configuration.GetSection(WorkflowOperationsOptions.SectionName));
         services.AddScoped<INextActionCalculator, NextActionCalculator>();
+        services.AddScoped<IWorkflowChangeRecorder, WorkflowChangeRecorder>();
         services.AddScoped<IWorkflowOperationalControlService, WorkflowOperationalControlService>();
         services.AddHostedService<WorkflowOperationsWorker>();
         services.AddScoped<ICompletionGateEvaluator, CompletionGateEvaluator>();
@@ -46,9 +51,9 @@ public sealed class WorkflowModule : IModule
         services.AddScoped<ICompletionGateHandler, ApprovalGrantedGateHandler>();
         services.AddScoped<ICompletionGateHandler, TaskCompletedGateHandler>();
         services.AddScoped<ICompletionGateHandler, RuleSatisfiedGateHandler>();
-        services.TryAddScoped<IClaimGateEvidenceReader, UnavailableClaimGateEvidenceReader>();
-        services.TryAddScoped<IDocumentGateEvidenceReader, UnavailableDocumentGateEvidenceReader>();
-        services.TryAddScoped<ICommunicationGateEvidenceReader, UnavailableCommunicationGateEvidenceReader>();
+        services.TryAddScoped<IClaimGateEvidenceReader, ClaimsModuleGateEvidenceReader>();
+        services.TryAddScoped<IDocumentGateEvidenceReader, DocumentsModuleGateEvidenceReader>();
+        services.TryAddScoped<ICommunicationGateEvidenceReader, CommunicationsModuleGateEvidenceReader>();
         services.TryAddScoped<IApprovalGateEvidenceReader, UnavailableApprovalGateEvidenceReader>();
         services.TryAddScoped<IRuleGateEvidenceReader, UnavailableRuleGateEvidenceReader>();
         services.AddValidatorsFromAssemblyContaining<WorkflowModule>(includeInternalTypes: true);
@@ -57,6 +62,7 @@ public sealed class WorkflowModule : IModule
             configuration.RegisterServicesFromAssemblyContaining<WorkflowModule>();
             configuration.AddOpenBehavior(typeof(ValidationBehavior<,>));
             configuration.AddOpenBehavior(typeof(WorkflowUnitOfWorkBehavior<,>));
+            configuration.AddOpenBehavior(typeof(WorkflowAuditOutboxBehavior<,>));
             configuration.AddOpenBehavior(typeof(WorkflowOperationalControlBehavior<,>));
         });
     }

@@ -1,40 +1,47 @@
 using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
+using PropertyIntelligence.BuildingBlocks.Security;
 using PropertyIntelligence.Modules.Workflow.Application.Commands;
+using PropertyIntelligence.Modules.Workflow.Application.Definitions;
 using PropertyIntelligence.Modules.Workflow.Application.Queries;
 
 namespace PropertyIntelligence.Modules.Workflow.Api;
 
 internal static class WorkflowEndpoints
 {
-    private const string OrganizationHeader = "X-Organization-Id";
-
     public static RouteGroupBuilder MapWorkflowEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/workflow")
             .WithTags("Workflow")
+            .RequireAuthorization(PlatformPolicies.TenantAccess)
             .AddEndpointFilter<WorkflowExceptionFilter>();
 
         group.MapGet("/status", () => Results.Ok(new { module = "workflow", status = "ready" }));
+
+        group.MapGet(
+                "/definitions",
+                (IWorkflowDefinitionCatalog catalog) => Results.Ok(catalog.List()))
+            .WithName("ListWorkflowDefinitions")
+            .Produces<IReadOnlyList<WorkflowDefinitionSummary>>(StatusCodes.Status200OK);
 
         group.MapPost(
                 "/claims/{claimId:guid}/workflows",
                 async (
                     Guid claimId,
                     CreateWorkflowRequest request,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                 {
                     var workflowId = await sender.Send(
                         new CreateWorkflowCommand(
-                            organizationId,
+                            identity.OrganizationId,
                             claimId,
                             request.Type,
-                            request.ToSnapshot()),
+                            request.DefinitionKey,
+                            request.DefinitionVersion),
                         cancellationToken);
 
                     return Results.Created(
@@ -42,6 +49,7 @@ internal static class WorkflowEndpoints
                         new { id = workflowId });
                 })
             .WithName("CreateWorkflow")
+            .RequireAuthorization(PlatformPolicies.ManageWorkflow)
             .Produces(StatusCodes.Status201Created)
             .ProducesValidationProblem();
 
@@ -49,11 +57,11 @@ internal static class WorkflowEndpoints
                 "/workflows/{workflowId:guid}",
                 async (
                     Guid workflowId,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                     Results.Ok(await sender.Send(
-                        new GetWorkflowQuery(organizationId, workflowId),
+                        new GetWorkflowQuery(identity.OrganizationId, workflowId),
                         cancellationToken)))
             .WithName("GetWorkflow")
             .Produces(StatusCodes.Status200OK)
@@ -63,11 +71,11 @@ internal static class WorkflowEndpoints
                 "/claims/{claimId:guid}/workflows",
                 async (
                     Guid claimId,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                     Results.Ok(await sender.Send(
-                        new ListClaimWorkflowsQuery(organizationId, claimId),
+                        new ListClaimWorkflowsQuery(identity.OrganizationId, claimId),
                         cancellationToken)))
             .WithName("ListClaimWorkflows")
             .Produces(StatusCodes.Status200OK);
@@ -76,12 +84,12 @@ internal static class WorkflowEndpoints
                 "/workflows/{workflowId:guid}/next-action",
                 async (
                     Guid workflowId,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                 {
                     var nextAction = await sender.Send(
-                        new GetWorkflowNextActionQuery(organizationId, workflowId),
+                        new GetWorkflowNextActionQuery(identity.OrganizationId, workflowId),
                         cancellationToken);
                     return nextAction is null
                         ? Results.NoContent()
@@ -92,16 +100,35 @@ internal static class WorkflowEndpoints
             .Produces(StatusCodes.Status204NoContent);
 
         group.MapGet(
+                "/workflows/{workflowId:guid}/audit",
+                async (
+                    Guid workflowId,
+                    int? limit,
+                    IRequestIdentity identity,
+                    ISender sender,
+                    CancellationToken cancellationToken) =>
+                    Results.Ok(await sender.Send(
+                        new GetWorkflowAuditQuery(
+                            identity.OrganizationId,
+                            workflowId,
+                            limit ?? 100),
+                        cancellationToken)))
+            .WithName("GetWorkflowAudit")
+            .RequireAuthorization(PlatformPolicies.ViewWorkflowAudit)
+            .Produces(StatusCodes.Status200OK)
+            .ProducesValidationProblem();
+
+        group.MapGet(
                 "/escalations",
                 async (
                     Guid? workflowId,
                     bool includeResolved,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                     Results.Ok(await sender.Send(
                         new ListWorkflowEscalationsQuery(
-                            organizationId,
+                            identity.OrganizationId,
                             workflowId,
                             includeResolved),
                         cancellationToken)))
@@ -112,20 +139,20 @@ internal static class WorkflowEndpoints
                 "/escalations/{escalationId:guid}/acknowledge",
                 async (
                     Guid escalationId,
-                    AcknowledgeEscalationRequest request,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                 {
                     await sender.Send(
                         new AcknowledgeWorkflowEscalationCommand(
-                            organizationId,
+                            identity.OrganizationId,
                             escalationId,
-                            request.ActorId),
+                            identity.UserId),
                         cancellationToken);
                     return Results.NoContent();
                 })
             .WithName("AcknowledgeWorkflowEscalation")
+            .RequireAuthorization(PlatformPolicies.ManageWorkflow)
             .Produces(StatusCodes.Status204NoContent)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
@@ -134,16 +161,17 @@ internal static class WorkflowEndpoints
                 async (
                     Guid workflowId,
                     VersionedWorkflowRequest request,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                 {
                     await sender.Send(
-                        new StartWorkflowCommand(organizationId, workflowId, request.ExpectedVersion),
+                        new StartWorkflowCommand(identity.OrganizationId, workflowId, request.ExpectedVersion),
                         cancellationToken);
                     return Results.NoContent();
                 })
             .WithName("StartWorkflow")
+            .RequireAuthorization(PlatformPolicies.ManageWorkflow)
             .Produces(StatusCodes.Status204NoContent);
 
         group.MapPost(
@@ -152,13 +180,13 @@ internal static class WorkflowEndpoints
                     Guid workflowId,
                     Guid taskId,
                     AssignTaskRequest request,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                 {
                     await sender.Send(
                         new AssignTaskCommand(
-                            organizationId,
+                            identity.OrganizationId,
                             workflowId,
                             taskId,
                             request.AssigneeId,
@@ -167,6 +195,7 @@ internal static class WorkflowEndpoints
                     return Results.NoContent();
                 })
             .WithName("AssignWorkflowTask")
+            .RequireAuthorization(PlatformPolicies.ManageWorkflow)
             .Produces(StatusCodes.Status204NoContent);
 
         group.MapPost(
@@ -175,13 +204,13 @@ internal static class WorkflowEndpoints
                     Guid workflowId,
                     Guid taskId,
                     VersionedWorkflowRequest request,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                 {
                     await sender.Send(
                         new StartTaskCommand(
-                            organizationId,
+                            identity.OrganizationId,
                             workflowId,
                             taskId,
                             request.ExpectedVersion),
@@ -189,6 +218,7 @@ internal static class WorkflowEndpoints
                     return Results.NoContent();
                 })
             .WithName("StartWorkflowTask")
+            .RequireAuthorization(PlatformPolicies.ManageWorkflow)
             .Produces(StatusCodes.Status204NoContent);
 
         group.MapPost(
@@ -197,7 +227,7 @@ internal static class WorkflowEndpoints
                     Guid workflowId,
                     Guid taskId,
                     CompleteTaskRequest request,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                 {
@@ -205,10 +235,10 @@ internal static class WorkflowEndpoints
                     // The command evaluates authoritative evidence through registered handlers.
                     var result = await sender.Send(
                         new CompleteTaskCommand(
-                            organizationId,
+                            identity.OrganizationId,
                             workflowId,
                             taskId,
-                            request.ActorId,
+                            identity.UserId,
                             request.ExpectedVersion),
                         cancellationToken);
 
@@ -221,6 +251,7 @@ internal static class WorkflowEndpoints
                         });
                 })
             .WithName("CompleteWorkflowTask")
+            .RequireAuthorization(PlatformPolicies.ManageWorkflow)
             .Produces(StatusCodes.Status204NoContent)
             .Produces(StatusCodes.Status409Conflict);
 
@@ -229,12 +260,12 @@ internal static class WorkflowEndpoints
                 async (
                     Guid workflowId,
                     Guid taskId,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                     Results.Ok(await sender.Send(
                         new GetTaskCompletionReadinessQuery(
-                            organizationId,
+                            identity.OrganizationId,
                             workflowId,
                             taskId),
                         cancellationToken)))
@@ -248,18 +279,18 @@ internal static class WorkflowEndpoints
                     Guid workflowId,
                     Guid taskId,
                     AddTaskBlockerRequest request,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                 {
                     var blockerId = await sender.Send(
                         new AddTaskBlockerCommand(
-                            organizationId,
+                            identity.OrganizationId,
                             workflowId,
                             taskId,
                             request.Code,
                             request.Description,
-                            request.ActorId,
+                            identity.UserId,
                             request.ExpectedVersion),
                         cancellationToken);
                     return Results.Created(
@@ -267,6 +298,7 @@ internal static class WorkflowEndpoints
                         new { id = blockerId });
                 })
             .WithName("AddWorkflowTaskBlocker")
+            .RequireAuthorization(PlatformPolicies.ManageWorkflow)
             .Produces(StatusCodes.Status201Created);
 
         group.MapPost(
@@ -276,23 +308,24 @@ internal static class WorkflowEndpoints
                     Guid taskId,
                     Guid blockerId,
                     ResolveTaskBlockerRequest request,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                 {
                     await sender.Send(
                         new ResolveTaskBlockerCommand(
-                            organizationId,
+                            identity.OrganizationId,
                             workflowId,
                             taskId,
                             blockerId,
-                            request.ActorId,
+                            identity.UserId,
                             request.Reason,
                             request.ExpectedVersion),
                         cancellationToken);
                     return Results.NoContent();
                 })
             .WithName("ResolveWorkflowTaskBlocker")
+            .RequireAuthorization(PlatformPolicies.ManageWorkflow)
             .Produces(StatusCodes.Status204NoContent);
 
         group.MapPost(
@@ -301,22 +334,23 @@ internal static class WorkflowEndpoints
                     Guid workflowId,
                     Guid stageId,
                     SkipStageRequest request,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                 {
                     await sender.Send(
                         new SkipStageCommand(
-                            organizationId,
+                            identity.OrganizationId,
                             workflowId,
                             stageId,
-                            request.ActorId,
+                            identity.UserId,
                             request.Reason,
                             request.ExpectedVersion),
                         cancellationToken);
                     return Results.NoContent();
                 })
             .WithName("SkipWorkflowStage")
+            .RequireAuthorization(PlatformPolicies.ManageWorkflow)
             .Produces(StatusCodes.Status204NoContent);
 
         group.MapPost(
@@ -324,21 +358,22 @@ internal static class WorkflowEndpoints
                 async (
                     Guid workflowId,
                     CancelWorkflowRequest request,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                 {
                     await sender.Send(
                         new CancelWorkflowCommand(
-                            organizationId,
+                            identity.OrganizationId,
                             workflowId,
-                            request.ActorId,
+                            identity.UserId,
                             request.Reason,
                             request.ExpectedVersion),
                         cancellationToken);
                     return Results.NoContent();
                 })
             .WithName("CancelWorkflow")
+            .RequireAuthorization(PlatformPolicies.ManageWorkflow)
             .Produces(StatusCodes.Status204NoContent);
 
         group.MapPost(
@@ -346,19 +381,20 @@ internal static class WorkflowEndpoints
                 async (
                     Guid workflowId,
                     VersionedWorkflowRequest request,
-                    [FromHeader(Name = OrganizationHeader)] Guid organizationId,
+                    IRequestIdentity identity,
                     ISender sender,
                     CancellationToken cancellationToken) =>
                 {
                     await sender.Send(
                         new ArchiveWorkflowCommand(
-                            organizationId,
+                            identity.OrganizationId,
                             workflowId,
                             request.ExpectedVersion),
                         cancellationToken);
                     return Results.NoContent();
                 })
             .WithName("ArchiveWorkflow")
+            .RequireAuthorization(PlatformPolicies.ManageWorkflow)
             .Produces(StatusCodes.Status204NoContent);
 
         return group;

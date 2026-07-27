@@ -2,38 +2,6 @@ using PropertyIntelligence.Modules.Workflow.Application.Gates;
 
 namespace PropertyIntelligence.Modules.Workflow.Infrastructure.Gates;
 
-internal sealed class UnavailableClaimGateEvidenceReader : IClaimGateEvidenceReader
-{
-    public Task<GateEvidence> HasFieldValueAsync(
-        Guid organizationId,
-        Guid claimId,
-        string fieldName,
-        CancellationToken cancellationToken) =>
-        Task.FromResult(GateEvidence.Unavailable("Claims evidence integration is not configured."));
-}
-
-internal sealed class UnavailableDocumentGateEvidenceReader : IDocumentGateEvidenceReader
-{
-    public Task<GateEvidence> DocumentExistsAsync(
-        Guid organizationId,
-        Guid claimId,
-        string documentType,
-        IReadOnlyCollection<string> acceptedStatuses,
-        CancellationToken cancellationToken) =>
-        Task.FromResult(GateEvidence.Unavailable("Documents evidence integration is not configured."));
-}
-
-internal sealed class UnavailableCommunicationGateEvidenceReader : ICommunicationGateEvidenceReader
-{
-    public Task<GateEvidence> CommunicationExistsAsync(
-        Guid organizationId,
-        Guid claimId,
-        string communicationType,
-        string requiredStatus,
-        CancellationToken cancellationToken) =>
-        Task.FromResult(GateEvidence.Unavailable("Communications evidence integration is not configured."));
-}
-
 internal sealed class UnavailableApprovalGateEvidenceReader : IApprovalGateEvidenceReader
 {
     public Task<GateEvidence> ApprovalExistsAsync(
