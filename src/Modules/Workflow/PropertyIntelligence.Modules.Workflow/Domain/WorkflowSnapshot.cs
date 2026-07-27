@@ -178,7 +178,8 @@ public sealed record TaskSnapshot(
     int Priority,
     bool IsRequired,
     IReadOnlySet<Guid> DependencySourceDefinitionIds,
-    IReadOnlyList<CompletionGateDefinition> CompletionGates)
+    IReadOnlyList<CompletionGateDefinition> CompletionGates,
+    DateTimeOffset? DueAt = null)
 {
     internal void Validate()
     {

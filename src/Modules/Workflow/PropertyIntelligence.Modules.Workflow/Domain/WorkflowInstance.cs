@@ -4,7 +4,11 @@ namespace PropertyIntelligence.Modules.Workflow.Domain;
 
 public sealed class WorkflowInstance
 {
-    private readonly List<WorkflowStage> _stages;
+    private readonly List<WorkflowStage> _stages = [];
+
+    private WorkflowInstance()
+    {
+    }
 
     private WorkflowInstance(
         Guid organizationId,
@@ -23,19 +27,19 @@ public sealed class WorkflowInstance
         CreatedAt = createdAt;
         Status = WorkflowStatus.NotStarted;
         Version = 1;
-        _stages = snapshot.Stages.Select(stage => new WorkflowStage(stage)).ToList();
+        _stages.AddRange(snapshot.Stages.Select(stage => new WorkflowStage(organizationId, stage)));
     }
 
-    public Guid Id { get; }
-    public Guid OrganizationId { get; }
-    public Guid ClaimId { get; }
-    public WorkflowType Type { get; }
-    public Guid SourcePlaybookId { get; }
-    public Guid SourcePlaybookVersionId { get; }
-    public int SnapshotSchemaVersion { get; }
+    public Guid Id { get; private set; }
+    public Guid OrganizationId { get; private set; }
+    public Guid ClaimId { get; private set; }
+    public WorkflowType Type { get; private set; }
+    public Guid SourcePlaybookId { get; private set; }
+    public Guid SourcePlaybookVersionId { get; private set; }
+    public int SnapshotSchemaVersion { get; private set; }
     public WorkflowStatus Status { get; private set; }
     public long Version { get; private set; }
-    public DateTimeOffset CreatedAt { get; }
+    public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset? StartedAt { get; private set; }
     public DateTimeOffset? CompletedAt { get; private set; }
     public DateTimeOffset? CancelledAt { get; private set; }
@@ -210,6 +214,8 @@ public sealed class WorkflowInstance
         ArchivedAt = archivedAt;
         IncrementVersion();
     }
+
+    internal WorkflowTask GetTask(Guid taskId) => FindTask(taskId);
 
     private void ActivateNextStage(DateTimeOffset activatedAt)
     {

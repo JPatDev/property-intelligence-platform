@@ -55,3 +55,24 @@ public enum GateEvaluationOutcome
     Failed = 2,
     Indeterminate = 3,
 }
+
+public enum WorkflowEscalationType
+{
+    TaskOverdue = 1,
+    TaskUnassigned = 2,
+    BlockerAged = 3,
+    NoNextAction = 4,
+}
+
+public enum WorkflowEscalationSeverity
+{
+    Warning = 1,
+    Critical = 2,
+}
+
+public enum WorkflowEscalationStatus
+{
+    Open = 1,
+    Acknowledged = 2,
+    Resolved = 3,
+}

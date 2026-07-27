@@ -5,27 +5,38 @@ namespace PropertyIntelligence.Modules.Workflow.Domain;
 public sealed class WorkflowTask
 {
     private readonly List<WorkflowBlocker> _blockers = [];
+    private readonly List<WorkflowTaskDependency> _dependencies = [];
+    private readonly List<CompletionGateDefinition> _completionGates = [];
 
-    internal WorkflowTask(TaskSnapshot snapshot)
+    private WorkflowTask()
+    {
+    }
+
+    internal WorkflowTask(Guid organizationId, TaskSnapshot snapshot)
     {
         Id = Guid.NewGuid();
+        OrganizationId = organizationId;
         SourceDefinitionId = snapshot.SourceDefinitionId;
         Name = snapshot.Name.Trim();
         Order = snapshot.Order;
         Priority = snapshot.Priority;
         IsRequired = snapshot.IsRequired;
-        DependencySourceDefinitionIds = new HashSet<Guid>(snapshot.DependencySourceDefinitionIds);
-        CompletionGates = new ReadOnlyCollection<CompletionGateDefinition>(
-            snapshot.CompletionGates.Select(gate => gate.Freeze()).ToArray());
+        DueAt = snapshot.DueAt;
+        _dependencies.AddRange(
+            snapshot.DependencySourceDefinitionIds.Select(dependencyId =>
+                new WorkflowTaskDependency(organizationId, Id, dependencyId)));
+        _completionGates.AddRange(snapshot.CompletionGates.Select(gate => gate.Freeze(organizationId)));
         Status = WorkflowTaskStatus.Pending;
     }
 
-    public Guid Id { get; }
-    public Guid SourceDefinitionId { get; }
-    public string Name { get; }
-    public int Order { get; }
-    public int Priority { get; }
-    public bool IsRequired { get; }
+    public Guid Id { get; private set; }
+    public Guid OrganizationId { get; private set; }
+    public Guid SourceDefinitionId { get; private set; }
+    public string Name { get; private set; } = string.Empty;
+    public int Order { get; private set; }
+    public int Priority { get; private set; }
+    public bool IsRequired { get; private set; }
+    public DateTimeOffset? DueAt { get; private set; }
     public WorkflowTaskStatus Status { get; private set; }
     public Guid? AssignedTo { get; private set; }
     public DateTimeOffset? StartedAt { get; private set; }
@@ -34,8 +45,10 @@ public sealed class WorkflowTask
     public Guid? CancelledBy { get; private set; }
     public DateTimeOffset? CancelledAt { get; private set; }
     public string? CancellationReason { get; private set; }
-    public IReadOnlySet<Guid> DependencySourceDefinitionIds { get; }
-    public IReadOnlyList<CompletionGateDefinition> CompletionGates { get; }
+    public IReadOnlySet<Guid> DependencySourceDefinitionIds =>
+        _dependencies.Select(dependency => dependency.DependencySourceDefinitionId).ToHashSet();
+    public IReadOnlyList<CompletionGateDefinition> CompletionGates =>
+        new ReadOnlyCollection<CompletionGateDefinition>(_completionGates);
     public IReadOnlyList<WorkflowBlocker> Blockers => _blockers.AsReadOnly();
     public bool HasOpenBlockers => _blockers.Any(blocker => !blocker.IsResolved);
 
@@ -86,7 +99,13 @@ public sealed class WorkflowTask
                 "A blocker code and description are required.");
         }
 
-        var blocker = new WorkflowBlocker(Guid.NewGuid(), code.Trim(), description.Trim(), actorId, createdAt);
+        var blocker = new WorkflowBlocker(
+            Guid.NewGuid(),
+            OrganizationId,
+            code.Trim(),
+            description.Trim(),
+            actorId,
+            createdAt);
         _blockers.Add(blocker);
         Status = WorkflowTaskStatus.Blocked;
         return blocker;

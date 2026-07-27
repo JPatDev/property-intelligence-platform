@@ -2,16 +2,43 @@ using System.Collections.ObjectModel;
 
 namespace PropertyIntelligence.Modules.Workflow.Domain;
 
-public sealed record CompletionGateDefinition(
-    Guid Id,
-    string GateType,
-    CompletionGateScope Scope,
-    CompletionGateSeverity Severity,
-    IReadOnlyDictionary<string, string> Parameters,
-    string FailureCode,
-    string FailureMessage,
-    int EvaluationVersion)
+public sealed class CompletionGateDefinition
 {
+    private CompletionGateDefinition()
+    {
+    }
+
+    public CompletionGateDefinition(
+        Guid id,
+        string gateType,
+        CompletionGateScope scope,
+        CompletionGateSeverity severity,
+        IReadOnlyDictionary<string, string> parameters,
+        string failureCode,
+        string failureMessage,
+        int evaluationVersion)
+    {
+        Id = id;
+        GateType = gateType;
+        Scope = scope;
+        Severity = severity;
+        Parameters = parameters;
+        FailureCode = failureCode;
+        FailureMessage = failureMessage;
+        EvaluationVersion = evaluationVersion;
+    }
+
+    public Guid Id { get; private set; }
+    public Guid OrganizationId { get; private set; }
+    public string GateType { get; private set; } = string.Empty;
+    public CompletionGateScope Scope { get; private set; }
+    public CompletionGateSeverity Severity { get; private set; }
+    public IReadOnlyDictionary<string, string> Parameters { get; private set; } =
+        new ReadOnlyDictionary<string, string>(new Dictionary<string, string>());
+    public string FailureCode { get; private set; } = string.Empty;
+    public string FailureMessage { get; private set; } = string.Empty;
+    public int EvaluationVersion { get; private set; }
+
     internal void Validate()
     {
         if (Id == Guid.Empty)
@@ -39,11 +66,21 @@ public sealed record CompletionGateDefinition(
         }
     }
 
-    internal CompletionGateDefinition Freeze() => this with
+    internal CompletionGateDefinition Freeze(Guid organizationId)
     {
-        Parameters = new ReadOnlyDictionary<string, string>(
-            new Dictionary<string, string>(Parameters, StringComparer.Ordinal)),
-    };
+        var gate = new CompletionGateDefinition(
+            Id,
+            GateType.Trim(),
+            Scope,
+            Severity,
+            new ReadOnlyDictionary<string, string>(
+                new Dictionary<string, string>(Parameters, StringComparer.Ordinal)),
+            FailureCode.Trim(),
+            FailureMessage.Trim(),
+            EvaluationVersion);
+        gate.OrganizationId = organizationId;
+        return gate;
+    }
 }
 
 public sealed record GateEvaluationResult(

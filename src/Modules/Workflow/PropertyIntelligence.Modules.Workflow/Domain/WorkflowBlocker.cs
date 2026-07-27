@@ -2,20 +2,32 @@ namespace PropertyIntelligence.Modules.Workflow.Domain;
 
 public sealed class WorkflowBlocker
 {
-    internal WorkflowBlocker(Guid id, string code, string description, Guid createdBy, DateTimeOffset createdAt)
+    private WorkflowBlocker()
+    {
+    }
+
+    internal WorkflowBlocker(
+        Guid id,
+        Guid organizationId,
+        string code,
+        string description,
+        Guid createdBy,
+        DateTimeOffset createdAt)
     {
         Id = id;
+        OrganizationId = organizationId;
         Code = code;
         Description = description;
         CreatedBy = createdBy;
         CreatedAt = createdAt;
     }
 
-    public Guid Id { get; }
-    public string Code { get; }
-    public string Description { get; }
-    public Guid CreatedBy { get; }
-    public DateTimeOffset CreatedAt { get; }
+    public Guid Id { get; private set; }
+    public Guid OrganizationId { get; private set; }
+    public string Code { get; private set; } = string.Empty;
+    public string Description { get; private set; } = string.Empty;
+    public Guid CreatedBy { get; private set; }
+    public DateTimeOffset CreatedAt { get; private set; }
     public Guid? ResolvedBy { get; private set; }
     public DateTimeOffset? ResolvedAt { get; private set; }
     public string? ResolutionReason { get; private set; }

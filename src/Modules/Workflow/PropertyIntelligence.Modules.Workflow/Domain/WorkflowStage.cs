@@ -2,24 +2,30 @@ namespace PropertyIntelligence.Modules.Workflow.Domain;
 
 public sealed class WorkflowStage
 {
-    private readonly List<WorkflowTask> _tasks;
+    private readonly List<WorkflowTask> _tasks = [];
 
-    internal WorkflowStage(StageSnapshot snapshot)
+    private WorkflowStage()
+    {
+    }
+
+    internal WorkflowStage(Guid organizationId, StageSnapshot snapshot)
     {
         Id = Guid.NewGuid();
+        OrganizationId = organizationId;
         SourceDefinitionId = snapshot.SourceDefinitionId;
         Name = snapshot.Name.Trim();
         Order = snapshot.Order;
         IsOptional = snapshot.IsOptional;
         Status = WorkflowStageStatus.Pending;
-        _tasks = snapshot.Tasks.OrderBy(task => task.Order).Select(task => new WorkflowTask(task)).ToList();
+        _tasks.AddRange(snapshot.Tasks.OrderBy(task => task.Order).Select(task => new WorkflowTask(organizationId, task)));
     }
 
-    public Guid Id { get; }
-    public Guid SourceDefinitionId { get; }
-    public string Name { get; }
-    public int Order { get; }
-    public bool IsOptional { get; }
+    public Guid Id { get; private set; }
+    public Guid OrganizationId { get; private set; }
+    public Guid SourceDefinitionId { get; private set; }
+    public string Name { get; private set; } = string.Empty;
+    public int Order { get; private set; }
+    public bool IsOptional { get; private set; }
     public WorkflowStageStatus Status { get; private set; }
     public DateTimeOffset? ActivatedAt { get; private set; }
     public DateTimeOffset? CompletedAt { get; private set; }
