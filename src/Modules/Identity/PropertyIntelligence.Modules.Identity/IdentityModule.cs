@@ -110,6 +110,12 @@ public sealed class IdentityModule : IModule
                 PlatformRoles.Assistant);
             AddRolePolicy(
                 options,
+                PlatformPolicies.ManagePlaybooks,
+                PlatformRoles.Owner,
+                PlatformRoles.Administrator,
+                PlatformRoles.Manager);
+            AddRolePolicy(
+                options,
                 PlatformPolicies.ViewWorkflowAudit,
                 PlatformRoles.Owner,
                 PlatformRoles.Administrator,

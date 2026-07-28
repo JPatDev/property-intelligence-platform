@@ -19,7 +19,13 @@ public sealed record WorkflowDefinitionSummary(
 
 public interface IWorkflowDefinitionCatalog
 {
-    WorkflowDefinition? Find(string key, int version);
+    Task<WorkflowDefinition?> FindAsync(
+        Guid organizationId,
+        string key,
+        int version,
+        CancellationToken cancellationToken);
 
-    IReadOnlyList<WorkflowDefinitionSummary> List();
+    Task<IReadOnlyList<WorkflowDefinitionSummary>> ListAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken);
 }

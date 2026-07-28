@@ -31,5 +31,6 @@ public static class PlatformPolicies
     public const string ManageDocuments = "platform.manage_documents";
     public const string ManageCommunications = "platform.manage_communications";
     public const string ManageWorkflow = "platform.manage_workflow";
+    public const string ManagePlaybooks = "platform.manage_playbooks";
     public const string ViewWorkflowAudit = "platform.view_workflow_audit";
 }

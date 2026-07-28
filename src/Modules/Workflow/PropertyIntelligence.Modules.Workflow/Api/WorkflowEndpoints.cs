@@ -22,7 +22,13 @@ internal static class WorkflowEndpoints
 
         group.MapGet(
                 "/definitions",
-                (IWorkflowDefinitionCatalog catalog) => Results.Ok(catalog.List()))
+                async (
+                    IRequestIdentity identity,
+                    IWorkflowDefinitionCatalog catalog,
+                    CancellationToken cancellationToken) =>
+                    Results.Ok(await catalog.ListAsync(
+                        identity.OrganizationId,
+                        cancellationToken)))
             .WithName("ListWorkflowDefinitions")
             .Produces<IReadOnlyList<WorkflowDefinitionSummary>>(StatusCodes.Status200OK);
 

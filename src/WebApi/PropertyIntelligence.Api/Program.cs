@@ -5,6 +5,7 @@ using PropertyIntelligence.Modules.Communications;
 using PropertyIntelligence.Modules.Documents;
 using PropertyIntelligence.Modules.Identity;
 using PropertyIntelligence.Modules.Organizations;
+using PropertyIntelligence.Modules.Playbooks;
 using PropertyIntelligence.Modules.Properties;
 using PropertyIntelligence.Modules.Reporting;
 using PropertyIntelligence.Modules.Workflow;
@@ -34,6 +35,7 @@ try
         new ClaimsModule(),
         new DocumentsModule(),
         new CommunicationsModule(),
+        new PlaybooksModule(),
         new WorkflowModule(),
         new ReportingModule(),
         new BillingModule(),

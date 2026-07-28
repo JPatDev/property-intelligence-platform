@@ -9,6 +9,8 @@ using PropertyIntelligence.Modules.Communications;
 using PropertyIntelligence.Modules.Communications.Infrastructure.Persistence;
 using PropertyIntelligence.Modules.Documents;
 using PropertyIntelligence.Modules.Documents.Infrastructure.Persistence;
+using PropertyIntelligence.Modules.Playbooks;
+using PropertyIntelligence.Modules.Playbooks.Infrastructure.Persistence;
 using PropertyIntelligence.Modules.Workflow.Infrastructure.Persistence;
 
 namespace PropertyIntelligence.Modules.Workflow.IntegrationTests;
@@ -66,6 +68,7 @@ public sealed partial class PostgreSqlWorkflowFixture : IAsyncLifetime
         new ClaimsModule().AddServices(services, configuration);
         new DocumentsModule().AddServices(services, configuration);
         new CommunicationsModule().AddServices(services, configuration);
+        new PlaybooksModule().AddServices(services, configuration);
         new WorkflowModule().AddServices(services, configuration);
         _serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -81,6 +84,8 @@ public sealed partial class PostgreSqlWorkflowFixture : IAsyncLifetime
         await documentsDbContext.Database.MigrateAsync();
         var communicationsDbContext = Services.GetRequiredService<CommunicationsDbContext>();
         await communicationsDbContext.Database.MigrateAsync();
+        var playbooksDbContext = Services.GetRequiredService<PlaybooksDbContext>();
+        await playbooksDbContext.Database.MigrateAsync();
         var workflowDbContext = Services.GetRequiredService<WorkflowDbContext>();
         await workflowDbContext.Database.MigrateAsync();
     }

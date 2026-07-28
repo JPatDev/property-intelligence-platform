@@ -6,6 +6,25 @@ namespace PropertyIntelligence.Modules.Claims.Infrastructure;
 
 internal sealed class ClaimFactsReader(ClaimsDbContext dbContext) : IClaimFactsReader
 {
+    public Task<ClaimAssignmentFacts?> GetAssignmentFactsAsync(
+        Guid organizationId,
+        Guid claimId,
+        CancellationToken cancellationToken) =>
+        dbContext.Claims
+            .AsNoTracking()
+            .Where(candidate =>
+                candidate.OrganizationId == organizationId &&
+                candidate.Id == claimId &&
+                !candidate.IsDeleted)
+            .Select(candidate => new ClaimAssignmentFacts(
+                candidate.Id,
+                candidate.PropertyId,
+                candidate.ClaimNumber,
+                candidate.PolicyNumber,
+                candidate.DateOfLoss,
+                candidate.Status.ToString()))
+            .SingleOrDefaultAsync(cancellationToken);
+
     public async Task<ClaimFactEvidence> GetFieldEvidenceAsync(
         Guid organizationId,
         Guid claimId,

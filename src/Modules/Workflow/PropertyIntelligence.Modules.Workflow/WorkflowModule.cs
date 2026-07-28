@@ -37,7 +37,7 @@ public sealed class WorkflowModule : IModule
                 .UseSnakeCaseNamingConvention());
 
         services.AddSingleton(TimeProvider.System);
-        services.AddSingleton<IWorkflowDefinitionCatalog, BuiltInWorkflowDefinitionCatalog>();
+        services.AddScoped<IWorkflowDefinitionCatalog, PublishedPlaybookWorkflowDefinitionCatalog>();
         services.Configure<WorkflowOperationsOptions>(
             configuration.GetSection(WorkflowOperationsOptions.SectionName));
         services.AddScoped<INextActionCalculator, NextActionCalculator>();

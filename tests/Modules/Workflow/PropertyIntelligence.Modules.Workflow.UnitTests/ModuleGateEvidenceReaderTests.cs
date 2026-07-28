@@ -79,6 +79,12 @@ public sealed class ModuleGateEvidenceReaderTests
 
     private sealed class StubClaimFactsReader(ClaimFactEvidenceOutcome outcome) : IClaimFactsReader
     {
+        public Task<ClaimAssignmentFacts?> GetAssignmentFactsAsync(
+            Guid organizationId,
+            Guid claimId,
+            CancellationToken cancellationToken) =>
+            Task.FromResult<ClaimAssignmentFacts?>(null);
+
         public Task<ClaimFactEvidence> GetFieldEvidenceAsync(
             Guid organizationId,
             Guid claimId,

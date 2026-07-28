@@ -4,6 +4,7 @@
     <ProjectReference Include="..\..\BuildingBlocks\PropertyIntelligence.BuildingBlocks\PropertyIntelligence.BuildingBlocks.csproj" />
     <ProjectReference Include="..\..\Modules\Identity\PropertyIntelligence.Modules.Identity\PropertyIntelligence.Modules.Identity.csproj" />
     <ProjectReference Include="..\..\Modules\Organizations\PropertyIntelligence.Modules.Organizations\PropertyIntelligence.Modules.Organizations.csproj" />
+    <ProjectReference Include="..\..\Modules\Playbooks\PropertyIntelligence.Modules.Playbooks\PropertyIntelligence.Modules.Playbooks.csproj" />
     <ProjectReference Include="..\..\Modules\Properties\PropertyIntelligence.Modules.Properties\PropertyIntelligence.Modules.Properties.csproj" />
     <ProjectReference Include="..\..\Modules\Claims\PropertyIntelligence.Modules.Claims\PropertyIntelligence.Modules.Claims.csproj" />
     <ProjectReference Include="..\..\Modules\Communications\PropertyIntelligence.Modules.Communications\PropertyIntelligence.Modules.Communications.csproj" />

@@ -4,15 +4,10 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <ProjectReference Include="..\..\..\BuildingBlocks\PropertyIntelligence.BuildingBlocks\PropertyIntelligence.BuildingBlocks.csproj" />
     <ProjectReference Include="..\..\Claims\PropertyIntelligence.Modules.Claims\PropertyIntelligence.Modules.Claims.csproj" />
-    <ProjectReference Include="..\..\Communications\PropertyIntelligence.Modules.Communications\PropertyIntelligence.Modules.Communications.csproj" />
-    <ProjectReference Include="..\..\Documents\PropertyIntelligence.Modules.Documents\PropertyIntelligence.Modules.Documents.csproj" />
-    <ProjectReference Include="..\..\Playbooks\PropertyIntelligence.Modules.Playbooks\PropertyIntelligence.Modules.Playbooks.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="EFCore.NamingConventions" Version="10.0.0" />
-    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
-    <PackageReference Include="MediatR" Version="12.5.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

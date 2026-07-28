@@ -14,9 +14,13 @@ internal sealed class CreateWorkflowCommandHandler(
     TimeProvider timeProvider)
     : IRequestHandler<CreateWorkflowCommand, Guid>
 {
-    public Task<Guid> Handle(CreateWorkflowCommand request, CancellationToken cancellationToken)
+    public async Task<Guid> Handle(CreateWorkflowCommand request, CancellationToken cancellationToken)
     {
-        var definition = definitionCatalog.Find(request.DefinitionKey, request.DefinitionVersion)
+        var definition = await definitionCatalog.FindAsync(
+            request.OrganizationId,
+            request.DefinitionKey,
+            request.DefinitionVersion,
+            cancellationToken)
             ?? throw new WorkflowDefinitionNotFoundException(
                 request.DefinitionKey,
                 request.DefinitionVersion);
@@ -38,7 +42,7 @@ internal sealed class CreateWorkflowCommandHandler(
             timeProvider.GetUtcNow());
 
         dbContext.Workflows.Add(workflow);
-        return Task.FromResult(workflow.Id);
+        return workflow.Id;
     }
 }
 

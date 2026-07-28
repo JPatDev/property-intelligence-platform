@@ -7,6 +7,11 @@ using PropertyIntelligence.Modules.Communications.Domain;
 using PropertyIntelligence.Modules.Communications.Infrastructure.Persistence;
 using PropertyIntelligence.Modules.Documents.Domain;
 using PropertyIntelligence.Modules.Documents.Infrastructure.Persistence;
+using PropertyIntelligence.Modules.Playbooks.Domain;
+using PropertyIntelligence.Modules.Playbooks.Contracts;
+using PropertyIntelligence.Modules.Playbooks.Application.Assignment;
+using PropertyIntelligence.Modules.Playbooks.Infrastructure.Persistence;
+using PropertyIntelligence.Modules.Playbooks.Seed;
 using PropertyIntelligence.Modules.Workflow.Application.Commands;
 using PropertyIntelligence.Modules.Workflow.Application.Queries;
 using PropertyIntelligence.Modules.Workflow.Domain;
@@ -24,6 +29,82 @@ public sealed class WorkflowPersistenceTests : IClassFixture<PostgreSqlWorkflowF
     }
 
     [Fact]
+    public async Task Published_assignment_rule_recommends_playbook_and_records_explanation()
+    {
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var organizationId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var claimsDbContext = _fixture.Services.GetRequiredService<ClaimsDbContext>();
+        var claim = Claim.Create(
+            organizationId,
+            Guid.NewGuid(),
+            $"CLM-{Guid.NewGuid():N}",
+            "POL-ASSIGN",
+            new DateOnly(2026, 7, 1),
+            actorId,
+            DateTimeOffset.UtcNow);
+        claimsDbContext.Claims.Add(claim);
+        await claimsDbContext.SaveChangesAsync(cancellationToken);
+
+        var rule = new PlaybookAssignmentRuleDefinition(
+            Guid.NewGuid(),
+            "Intake claims with a policy",
+            100,
+            new PlaybookConditionGroup(
+                "all",
+                [
+                    new PlaybookFactCondition(
+                        PlaybookAssignmentFacts.Status,
+                        PlaybookAssignmentOperators.EqualTo,
+                        ["Intake"]),
+                    new PlaybookFactCondition(
+                        PlaybookAssignmentFacts.PolicyNumber,
+                        PlaybookAssignmentOperators.Exists),
+                ]));
+        var playbooksDbContext = _fixture.Services.GetRequiredService<PlaybooksDbContext>();
+        var playbook = Playbook.Create(
+            organizationId,
+            $"assignment-{Guid.NewGuid():N}",
+            "Assignment Test",
+            "Tests deterministic playbook assignment.",
+            "Primary",
+            1,
+            InitialPlaybooks.PropertyClaimIntakeStages(),
+            actorId,
+            DateTimeOffset.UtcNow,
+            [rule]);
+        playbook.Publish(playbook.Versions.Single().Id, actorId, DateTimeOffset.UtcNow);
+        playbooksDbContext.Playbooks.Add(playbook);
+        await playbooksDbContext.SaveChangesAsync(cancellationToken);
+        playbooksDbContext.ChangeTracker.Clear();
+
+        var service = _fixture.Services
+            .GetRequiredService<PlaybookAssignmentRecommendationService>();
+        var recommendations = await service.RecommendAsync(
+            organizationId,
+            claim.Id,
+            actorId,
+            cancellationToken);
+
+        var recommendation = Assert.Single(recommendations!);
+        Assert.Equal(PlaybookAssignmentOutcome.Matched, recommendation.Outcome);
+        Assert.Equal(100, recommendation.Priority);
+        Assert.All(
+            recommendation.Conditions,
+            condition => Assert.Equal(
+                PlaybookAssignmentOutcome.Matched,
+                condition.Outcome));
+        var audit = await playbooksDbContext.AssignmentEvaluations
+            .AsNoTracking()
+            .SingleAsync(
+                record =>
+                    record.OrganizationId == organizationId &&
+                    record.ClaimId == claim.Id,
+                cancellationToken);
+        Assert.Contains("Intake claims with a policy", audit.ResultsJson);
+    }
+
+    [Fact]
     public async Task Authoritative_evidence_completes_property_claim_intake_workflow()
     {
         var cancellationToken = TestContext.Current.CancellationToken;
@@ -31,6 +112,10 @@ public sealed class WorkflowPersistenceTests : IClassFixture<PostgreSqlWorkflowF
         var actorId = Guid.NewGuid();
         var claimsDbContext = _fixture.Services.GetRequiredService<ClaimsDbContext>();
         var sender = _fixture.Services.GetRequiredService<ISender>();
+        var sourcePlaybook = await CreatePublishedPlaybookAsync(
+            organizationId,
+            actorId,
+            cancellationToken);
         var claim = Claim.Create(
             organizationId,
             Guid.NewGuid(),
@@ -53,6 +138,52 @@ public sealed class WorkflowPersistenceTests : IClassFixture<PostgreSqlWorkflowF
         var created = await sender.Send(
             new GetWorkflowQuery(organizationId, workflowId),
             cancellationToken);
+        Assert.Equal(sourcePlaybook.Id, created.SourcePlaybookId);
+        Assert.Equal(sourcePlaybook.Versions.Single().Id, created.SourcePlaybookVersionId);
+
+        var playbooksDbContext = _fixture.Services.GetRequiredService<PlaybooksDbContext>();
+        playbooksDbContext.ChangeTracker.Clear();
+        var editablePlaybook = await playbooksDbContext.Playbooks
+            .Include(playbook => playbook.Versions)
+            .SingleAsync(playbook => playbook.Id == sourcePlaybook.Id, cancellationToken);
+        var storedPlaybookVersion = await playbooksDbContext.Playbooks
+            .AsNoTracking()
+            .Where(playbook => playbook.Id == sourcePlaybook.Id)
+            .Select(playbook => playbook.Version)
+            .SingleAsync(cancellationToken);
+        Assert.Equal(storedPlaybookVersion, editablePlaybook.Version);
+        var secondVersionId = editablePlaybook.CreateDraft(actorId, DateTimeOffset.UtcNow);
+        await playbooksDbContext.SaveChangesAsync(cancellationToken);
+
+        playbooksDbContext.ChangeTracker.Clear();
+        editablePlaybook = await playbooksDbContext.Playbooks
+            .Include(playbook => playbook.Versions)
+            .SingleAsync(playbook => playbook.Id == sourcePlaybook.Id, cancellationToken);
+        var changedStages = InitialPlaybooks.PropertyClaimIntakeStages().ToArray();
+        changedStages[0] = changedStages[0] with { Name = "Changed Claim Intake" };
+        editablePlaybook.UpdateDraft(
+            secondVersionId,
+            editablePlaybook.Name,
+            editablePlaybook.Description,
+            "Primary",
+            1,
+            changedStages,
+            actorId,
+            DateTimeOffset.UtcNow);
+        await playbooksDbContext.SaveChangesAsync(cancellationToken);
+
+        playbooksDbContext.ChangeTracker.Clear();
+        editablePlaybook = await playbooksDbContext.Playbooks
+            .Include(playbook => playbook.Versions)
+            .SingleAsync(playbook => playbook.Id == sourcePlaybook.Id, cancellationToken);
+        editablePlaybook.Publish(secondVersionId, actorId, DateTimeOffset.UtcNow);
+        await playbooksDbContext.SaveChangesAsync(cancellationToken);
+        var frozenWorkflow = await sender.Send(
+            new GetWorkflowQuery(organizationId, workflowId),
+            cancellationToken);
+        Assert.Equal("Claim Intake", frozenWorkflow.Stages[0].Name);
+        Assert.Equal(sourcePlaybook.Versions.Single().Id, frozenWorkflow.SourcePlaybookVersionId);
+
         await sender.Send(
             new StartWorkflowCommand(organizationId, workflowId, created.Version),
             cancellationToken);
@@ -193,6 +324,10 @@ public sealed class WorkflowPersistenceTests : IClassFixture<PostgreSqlWorkflowF
         var gateId = Guid.Parse("47615de1-5058-4868-b94b-38a3ad54c4da");
         var sender = _fixture.Services.GetRequiredService<ISender>();
         var dbContext = _fixture.Services.GetRequiredService<WorkflowDbContext>();
+        await CreatePublishedPlaybookAsync(
+            organizationId,
+            Guid.NewGuid(),
+            cancellationToken);
         var workflowId = await sender.Send(new CreateWorkflowCommand(
             organizationId,
             claimId,
@@ -263,5 +398,29 @@ public sealed class WorkflowPersistenceTests : IClassFixture<PostgreSqlWorkflowF
         Assert.Equal(2, outboxMessages.Count);
         Assert.All(outboxMessages, message => Assert.Null(message.ProcessedAt));
         Assert.All(outboxMessages, message => Assert.Equal(0, message.AttemptCount));
+    }
+
+    private async Task<Playbook> CreatePublishedPlaybookAsync(
+        Guid organizationId,
+        Guid actorId,
+        CancellationToken cancellationToken)
+    {
+        var dbContext = _fixture.Services.GetRequiredService<PlaybooksDbContext>();
+        var now = DateTimeOffset.UtcNow;
+        var playbook = Playbook.Create(
+            organizationId,
+            InitialPlaybooks.PropertyClaimIntakeKey,
+            "Property Claim Intake",
+            "Captures core claim facts, verifies the signed agreement, and sends carrier notice.",
+            "Primary",
+            1,
+            InitialPlaybooks.PropertyClaimIntakeStages(),
+            actorId,
+            now);
+        var versionId = playbook.Versions.Single().Id;
+        playbook.Publish(versionId, actorId, now);
+        dbContext.Playbooks.Add(playbook);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return playbook;
     }
 }

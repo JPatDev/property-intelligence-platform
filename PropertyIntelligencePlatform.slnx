@@ -34,6 +34,9 @@
   <Folder Name="/src/WebApi/">
     <Project Path="src/WebApi/PropertyIntelligence.Api/PropertyIntelligence.Api.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/Playbooks/">
+    <Project Path="src/Modules/Playbooks/PropertyIntelligence.Modules.Playbooks/PropertyIntelligence.Modules.Playbooks.csproj" />
+  </Folder>
   <Folder Name="/tests/" />
   <Folder Name="/tests/Modules/" />
   <Folder Name="/tests/Modules/Workflow/">
