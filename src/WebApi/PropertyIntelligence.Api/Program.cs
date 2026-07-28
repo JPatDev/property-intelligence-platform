@@ -9,6 +9,8 @@ using PropertyIntelligence.Modules.Playbooks;
 using PropertyIntelligence.Modules.Properties;
 using PropertyIntelligence.Modules.Reporting;
 using PropertyIntelligence.Modules.Workflow;
+using PropertyIntelligence.Api.OpenApi;
+using Microsoft.OpenApi;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -42,7 +44,58 @@ try
     ];
 
     builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
+    builder.Services.AddSwaggerGen(options =>
+    {
+        if (!builder.Environment.IsDevelopment())
+        {
+            return;
+        }
+
+        options.AddSecurityDefinition(
+            DevelopmentHeaderSecurity.UserId,
+            new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.ApiKey,
+                In = ParameterLocation.Header,
+                Name = "X-User-Id",
+                Description = "Development user ID. Enter any non-empty GUID.",
+            });
+        options.AddSecurityDefinition(
+            DevelopmentHeaderSecurity.OrganizationId,
+            new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.ApiKey,
+                In = ParameterLocation.Header,
+                Name = "X-Organization-Id",
+                Description = "Development tenant ID. Use the same GUID for related test data.",
+            });
+        options.AddSecurityDefinition(
+            DevelopmentHeaderSecurity.Roles,
+            new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.ApiKey,
+                In = ParameterLocation.Header,
+                Name = "X-Roles",
+                Description =
+                    "Optional comma-separated roles. Use Owner for all development operations.",
+            });
+        options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference(
+                DevelopmentHeaderSecurity.UserId,
+                document,
+                null)] = [],
+            [new OpenApiSecuritySchemeReference(
+                DevelopmentHeaderSecurity.OrganizationId,
+                document,
+                null)] = [],
+            [new OpenApiSecuritySchemeReference(
+                DevelopmentHeaderSecurity.Roles,
+                document,
+                null)] = [],
+        });
+        options.OperationFilter<DevelopmentHeaderSecurityOperationFilter>();
+    });
     builder.Services.AddCors(options =>
     {
         options.AddPolicy("WebApp", policy =>
