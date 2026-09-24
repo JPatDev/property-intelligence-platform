@@ -27,6 +27,7 @@ public static class PlatformRoles
 public static class PlatformPolicies
 {
     public const string TenantAccess = "platform.tenant_access";
+    public const string ManageProperties = "platform.manage_properties";
     public const string ManageClaims = "platform.manage_claims";
     public const string ManageDocuments = "platform.manage_documents";
     public const string ManageCommunications = "platform.manage_communications";

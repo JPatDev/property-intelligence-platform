@@ -78,6 +78,14 @@ public sealed class IdentityModule : IModule
                 policy => RequireTenantIdentity(policy));
             AddRolePolicy(
                 options,
+                PlatformPolicies.ManageProperties,
+                PlatformRoles.Owner,
+                PlatformRoles.Administrator,
+                PlatformRoles.Manager,
+                PlatformRoles.PublicAdjuster,
+                PlatformRoles.Assistant);
+            AddRolePolicy(
+                options,
                 PlatformPolicies.ManageClaims,
                 PlatformRoles.Owner,
                 PlatformRoles.Administrator,

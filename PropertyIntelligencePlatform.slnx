@@ -39,6 +39,10 @@
   </Folder>
   <Folder Name="/tests/" />
   <Folder Name="/tests/Modules/" />
+  <Folder Name="/tests/Modules/Properties/">
+    <Project Path="tests/Modules/Properties/PropertyIntelligence.Modules.Properties.UnitTests/PropertyIntelligence.Modules.Properties.UnitTests.csproj" />
+    <Project Path="tests/Modules/Properties/PropertyIntelligence.Modules.Properties.IntegrationTests/PropertyIntelligence.Modules.Properties.IntegrationTests.csproj" />
+  </Folder>
   <Folder Name="/tests/Modules/Workflow/">
     <Project Path="tests/Modules/Workflow/PropertyIntelligence.Modules.Workflow.UnitTests/PropertyIntelligence.Modules.Workflow.UnitTests.csproj" />
     <Project Path="tests/Modules/Workflow/PropertyIntelligence.Modules.Workflow.IntegrationTests/PropertyIntelligence.Modules.Workflow.IntegrationTests.csproj" />
