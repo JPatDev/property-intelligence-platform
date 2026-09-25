@@ -1,0 +1,60 @@
+name: Deploy AWS application
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment (foundation, data, web, database users and secrets must exist)
+        type: choice
+        options: [dev, test, staging, production]
+        default: dev
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aws-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    uses: ./.github/workflows/ci.yml
+  deploy:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      CF_EXECUTION_ROLE_ARN: ${{ vars.CF_EXECUTION_ROLE_ARN }}
+      DEPLOY_ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+      DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Check GitHub environment configuration
+        shell: pwsh
+        run: |
+          foreach ($name in 'AWS_REGION', 'CF_EXECUTION_ROLE_ARN', 'DEPLOY_ROLE_ARN') {
+            if (![Environment]::GetEnvironmentVariable($name)) { throw "Configure environment variable $name in GitHub." }
+          }
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src/WebApp/property-intelligence-web/package-lock.json
+      - run: npm ci
+        working-directory: src/WebApp/property-intelligence-web
+      - uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-duration-seconds: 7200
+      - name: Build, migrate, deploy API, and publish frontend
+        shell: pwsh
+        run: ./scripts/deployment/deploy-application.ps1 -Environment $env:DEPLOY_ENVIRONMENT

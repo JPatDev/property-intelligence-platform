@@ -1,0 +1,14 @@
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/logs
+**/*.user
+**/.env*
+.git
+.vs
+.vscode
+.tmp
+TestResults
+artifacts
+infrastructure/parameters/*.local.json

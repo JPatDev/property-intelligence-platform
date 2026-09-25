@@ -12,3 +12,6 @@ dist/
 .env.local
 .env.*.local
 *.tsbuildinfo
+.tmp/
+artifacts/
+infrastructure/parameters/*.local.json

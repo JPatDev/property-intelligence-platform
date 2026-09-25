@@ -27,3 +27,6 @@ See the other documents for details.
 ## Cloud Direction
 
 AWS is the deployment target, with AWS CloudFormation as the preferred infrastructure-as-code approach. See the [AWS SaaS architecture](architecture/aws-saas-architecture.md) for proposed services and deployment considerations.
+
+See [deployment operations](operations/deployment.md) for GitHub Actions workflows,
+AWS account prerequisites, environment configuration, and release steps.

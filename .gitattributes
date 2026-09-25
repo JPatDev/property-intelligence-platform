@@ -1,0 +1,4 @@
+# Container entrypoints and Linux runner scripts must retain Unix line endings.
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf

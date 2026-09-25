@@ -1,0 +1,21 @@
+{
+  "foundation": {
+    "VpcId": "REPLACE_ME",
+    "PublicSubnetIds": "REPLACE_ME,REPLACE_ME",
+    "PrivateSubnetIds": "REPLACE_ME,REPLACE_ME"
+  },
+  "data": { "DatabaseInstanceClass": "db.t4g.micro", "DatabaseMultiAz": "false" },
+  "web": {},
+  "runtime": {
+    "ApplicationConnectionSecretArn": "REPLACE_ME",
+    "MigrationConnectionSecretArn": "REPLACE_ME",
+    "AuthenticationAuthority": "REPLACE_ME",
+    "AuthenticationAudience": "REPLACE_ME"
+  },
+  "application": {
+    "ApiDomainName": "REPLACE_ME",
+    "HostedZoneId": "REPLACE_ME",
+    "CertificateArn": "REPLACE_ME",
+    "DesiredCount": "1"
+  }
+}

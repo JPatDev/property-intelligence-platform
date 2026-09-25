@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgis/postgis:16-3.5
+        env:
+          POSTGRES_DB: property_intelligence
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d property_intelligence"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      ConnectionStrings__WorkflowTestAdmin: Host=localhost;Port=5432;Database=property_intelligence;Username=postgres;Password=ci-only-password;Pooling=false
+      ConnectionStrings__PropertiesTestAdmin: Host=localhost;Port=5432;Database=property_intelligence;Username=postgres;Password=ci-only-password;Pooling=false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet restore PropertyIntelligencePlatform.slnx
+      - run: dotnet build PropertyIntelligencePlatform.slnx --configuration Release --no-restore
+      - run: dotnet test PropertyIntelligencePlatform.slnx --configuration Release --no-build --verbosity normal
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: src/WebApp/property-intelligence-web
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: src/WebApp/property-intelligence-web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  infrastructure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install -r infrastructure/requirements-dev.txt
+      - run: cfn-lint infrastructure/bootstrap/*.yml infrastructure/templates/*.yml
+      - name: Validate deployment scripts and parameter files
+        shell: pwsh
+        run: ./scripts/deployment/Test-DeploymentStructure.ps1
+      - name: Check change-set preview and failure behavior without AWS
+        shell: pwsh
+        run: ./scripts/deployment/tests/Planning.Tests.ps1
+
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgis/postgis:16-3.5
+        env:
+          POSTGRES_DB: property_intelligence
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-password
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d property_intelligence"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Build API and migration bundles
+        run: docker build --file src/WebApi/PropertyIntelligence.Api/Dockerfile --tag property-intelligence:ci .
+      - name: Apply bundled migrations to disposable database
+        run: >-
+          docker run --rm --network host
+          -e 'ConnectionStrings__Workflow=Host=localhost;Database=property_intelligence;Username=postgres;Password=ci-only-password'
+          property-intelligence:ci migrate
+      - name: Smoke test production configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          trap 'docker logs api-smoke; docker rm -f api-smoke' EXIT
+          docker run -d --name api-smoke --network host \
+            -e ASPNETCORE_ENVIRONMENT=Production \
+            -e Authentication__Authority=https://issuer.example.invalid \
+            -e Authentication__Audience=ci \
+            -e 'ConnectionStrings__Workflow=Host=localhost;Database=property_intelligence;Username=postgres;Password=ci-only-password' \
+            property-intelligence:ci
+          curl --fail --retry 15 --retry-connrefused --retry-delay 2 http://localhost:8080/health

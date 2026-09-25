@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Shared ECS and image resources; connects to an existing VPC.
+Parameters:
+  EnvironmentName:
+    Type: String
+    AllowedValues: [dev, test, staging, production]
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  PublicSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: At least two public subnets in different Availability Zones for the ALB.
+  PrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: At least two private subnets with outbound access for Fargate image pulls and secrets.
+Resources:
+  ApiRepository:
+    Type: AWS::ECR::Repository
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      RepositoryName: !Sub property-intelligence-${EnvironmentName}-api
+      ImageTagMutability: IMMUTABLE
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      EncryptionConfiguration:
+        EncryptionType: AES256
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub property-intelligence-${EnvironmentName}
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Public HTTPS ingress
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+  ApplicationSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: API ingress only from the load balancer
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
+Outputs:
+  VpcId:
+    Value: !Ref VpcId
+  PublicSubnetIds:
+    Value: !Join [',', !Ref PublicSubnetIds]
+  PrivateSubnetIds:
+    Value: !Join [',', !Ref PrivateSubnetIds]
+  RepositoryUri:
+    Value: !GetAtt ApiRepository.RepositoryUri
+  RepositoryName:
+    Value: !Ref ApiRepository
+  ClusterArn:
+    Value: !GetAtt Cluster.Arn
+  ApplicationSecurityGroupId:
+    Value: !Ref ApplicationSecurityGroup
+  LoadBalancerSecurityGroupId:
+    Value: !Ref LoadBalancerSecurityGroup

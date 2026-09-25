@@ -1,0 +1,160 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Versioned API and migration task definitions; does not update the running service.
+Parameters:
+  EnvironmentName:
+    Type: String
+    AllowedValues: [dev, test, staging, production]
+  ImageUri:
+    Type: String
+    AllowedPattern: '.+@sha256:[a-f0-9]{64}'
+  ApplicationConnectionSecretArn:
+    Type: String
+    Description: Secrets Manager secret containing a plain-text Npgsql connection string for the runtime database user.
+  MigrationConnectionSecretArn:
+    Type: String
+    Description: Separate plain-text Npgsql connection string for the database schema owner.
+  AuthenticationAuthority:
+    Type: String
+    AllowedPattern: 'https://.+'
+  AuthenticationAudience:
+    Type: String
+    MinLength: 1
+  WebOrigin:
+    Type: String
+    AllowedPattern: 'https://[^/]+'
+Resources:
+  Logs:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: !Sub /property-intelligence/${EnvironmentName}/api
+      RetentionInDays: 30
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub property-intelligence-${EnvironmentName}-task
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub property-intelligence-${EnvironmentName}-execution
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: ReadRuntimeConnection
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref ApplicationConnectionSecretArn
+  MigrationExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub property-intelligence-${EnvironmentName}-migration-execution
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: ReadMigrationConnection
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref MigrationConnectionSecretArn
+  ApiTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Family: !Sub property-intelligence-${EnvironmentName}-api
+      RequiresCompatibilities: [FARGATE]
+      NetworkMode: awsvpc
+      Cpu: '256'
+      Memory: '512'
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      ExecutionRoleArn: !GetAtt ExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      ContainerDefinitions:
+        - Name: api
+          Image: !Ref ImageUri
+          Essential: true
+          PortMappings:
+            - ContainerPort: 8080
+          Environment:
+            - Name: ASPNETCORE_ENVIRONMENT
+              Value: Production
+            - Name: Authentication__Mode
+              Value: JwtBearer
+            - Name: Authentication__Authority
+              Value: !Ref AuthenticationAuthority
+            - Name: Authentication__Audience
+              Value: !Ref AuthenticationAudience
+            - Name: ClientApp__AllowedOrigins__0
+              Value: !Ref WebOrigin
+          Secrets:
+            - Name: ConnectionStrings__Workflow
+              ValueFrom: !Ref ApplicationConnectionSecretArn
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref Logs
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: api
+  MigrationTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Family: !Sub property-intelligence-${EnvironmentName}-migration
+      RequiresCompatibilities: [FARGATE]
+      NetworkMode: awsvpc
+      Cpu: '256'
+      Memory: '512'
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      ExecutionRoleArn: !GetAtt MigrationExecutionRole.Arn
+      TaskRoleArn: !GetAtt TaskRole.Arn
+      ContainerDefinitions:
+        - Name: migration
+          Image: !Ref ImageUri
+          Essential: true
+          Command: [migrate]
+          Secrets:
+            - Name: ConnectionStrings__Workflow
+              ValueFrom: !Ref MigrationConnectionSecretArn
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref Logs
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: migration
+Outputs:
+  ApiTaskDefinitionArn:
+    Value: !Ref ApiTaskDefinition
+  MigrationTaskDefinitionArn:
+    Value: !Ref MigrationTaskDefinition

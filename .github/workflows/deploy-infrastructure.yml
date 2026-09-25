@@ -1,0 +1,66 @@
+name: Deploy AWS infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [dev, test, staging, production]
+        default: dev
+      stack:
+        description: Deploy foundation first, then data and web
+        type: choice
+        options: [foundation, data, web]
+        default: foundation
+      execute:
+        description: Execute the generated change set (false previews changes only)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aws-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      CF_EXECUTION_ROLE_ARN: ${{ vars.CF_EXECUTION_ROLE_ARN }}
+      DEPLOY_ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+      DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+      DEPLOY_STACK: ${{ inputs.stack }}
+      DEPLOY_EXECUTE: ${{ inputs.execute }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Check GitHub environment configuration
+        shell: pwsh
+        run: |
+          foreach ($name in 'AWS_REGION', 'CF_EXECUTION_ROLE_ARN', 'DEPLOY_ROLE_ARN') {
+            if (![Environment]::GetEnvironmentVariable($name)) { throw "Configure environment variable $name in GitHub." }
+          }
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install -r infrastructure/requirements-dev.txt
+      - run: cfn-lint infrastructure/bootstrap/*.yml infrastructure/templates/*.yml
+      - uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-duration-seconds: 7200
+      - name: Prepare or execute CloudFormation change set
+        shell: pwsh
+        run: ./scripts/deployment/deploy-infrastructure.ps1 -Environment $env:DEPLOY_ENVIRONMENT -Stack $env:DEPLOY_STACK -Execute:($env:DEPLOY_EXECUTE -eq 'true')
