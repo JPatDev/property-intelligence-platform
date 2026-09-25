@@ -19,7 +19,8 @@ Architecture
 - FluentValidation
 
 Cloud
-- Azure
-- Azure OpenAI
-- Azure Blob Storage
-- Azure Service Bus
+- AWS
+- AWS CloudFormation (YAML)
+- AI provider TBD (evaluate Amazon Bedrock and direct OpenAI APIs)
+- Amazon S3
+- Amazon SQS (SNS for fan-out where needed)

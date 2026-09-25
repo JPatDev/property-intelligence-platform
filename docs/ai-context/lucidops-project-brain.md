@@ -192,12 +192,11 @@ LucidOPS is a commercial SaaS platform.
 
 Deployment target:
 
-Microsoft Azure
+Amazon Web Services (AWS)
 
 Future support:
 
-* Azure Marketplace
-* Microsoft AppSource
+* AWS Marketplace
 
 ---
 
@@ -240,32 +239,31 @@ Database:
 
 Storage:
 
-* Azure Blob Storage
+* Amazon S3
 
 Messaging:
 
-* Azure Service Bus
+* Amazon SQS (SNS for fan-out where needed)
 
 AI:
 
-* Azure OpenAI
+* AI provider TBD (evaluate Amazon Bedrock and direct OpenAI APIs)
 * OpenAI APIs
 
 OCR:
 
-* Azure AI Document Intelligence
+* Amazon Textract (proposed; validate extraction quality)
 
 Observability:
 
-* Azure Monitor
-* Application Insights
+* Amazon CloudWatch
+* OpenTelemetry tracing
 
 Infrastructure:
 
-* Azure
+* AWS
 * GitHub Actions
-* Bicep (preferred)
-* Terraform (optional)
+* AWS CloudFormation (YAML; preferred)
 
 ---
 

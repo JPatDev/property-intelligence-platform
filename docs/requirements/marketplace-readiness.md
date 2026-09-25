@@ -1,12 +1,12 @@
 # Marketplace Readiness
 
 ## Goals
-Prepare ClaimsOS for Azure Marketplace publication.
+Prepare ClaimsOS for AWS Marketplace publication.
 
 ## Requirements
 - SaaS landing page
 - Subscription activation endpoint
-- Marketplace webhook processing
+- Marketplace subscription and entitlement event processing (validate current AWS requirements)
 - Terms of Service
 - Privacy Policy
 - Support contacts

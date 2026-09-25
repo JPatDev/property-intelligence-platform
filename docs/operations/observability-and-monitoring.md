@@ -1,8 +1,8 @@
 # Observability and Monitoring
 
 ## Monitoring
-- Application Insights
-- Azure Monitor
+- OpenTelemetry tracing
+- Amazon CloudWatch
 - Health checks
 
 ## Metrics
